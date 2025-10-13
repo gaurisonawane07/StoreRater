@@ -1,3 +1,4 @@
+// src/App.jsx
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
@@ -17,22 +18,18 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute role="admin">
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/owner"
-            element={
-              <ProtectedRoute role="owner">
-                <OwnerDashboard />
-              </ProtectedRoute>
-            }
-          />
+
+          <Route path="/admin" element={
+            <ProtectedRoute role="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/owner" element={
+            <ProtectedRoute role="owner">
+              <OwnerDashboard />
+            </ProtectedRoute>
+          } />
         </Routes>
       </Router>
     </AuthProvider>

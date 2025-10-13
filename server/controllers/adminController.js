@@ -1,5 +1,6 @@
 // controllers/adminController.js
 import pool from '../db.js';
+import bcrypt from 'bcryptjs'
 
 export async function dashboardCounts(req, res) {
   try {
@@ -71,5 +72,65 @@ export async function adminListStores(req, res) {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: 'Server error' });
+  }
+}
+export async function createUserByAdmin(req, res) {
+  try {
+    const { name, email, password, address, role } = req.body;
+
+    if (!name || !email || !password)
+      return res.status(400).json({ error: "Name, email, and password are required" });
+
+    // Check for existing user
+    const existing = await pool.query("SELECT id FROM users WHERE email=$1", [email]);
+    if (existing.rows.length > 0)
+      return res.status(400).json({ error: "User already exists" });
+
+    // Hash password
+    const hashed = await bcrypt.hash(password, 10);
+
+    // Insert new user
+    const insert = `
+      INSERT INTO users (name, email, password, address, role)
+      VALUES ($1,$2,$3,$4,$5)
+      RETURNING id, name, email, address, role
+    `;
+    const { rows } = await pool.query(insert, [name, email, hashed, address || "", role || "user"]);
+
+    return res.status(201).json({ user: rows[0] });
+  } catch (err) {
+    console.error("Admin createUser error:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+}
+
+/**
+ * Admin create a new store (Admin Add Store modal)
+ */
+export async function createStoreByAdmin(req, res) {
+  try {
+    const { name, address, owner_id } = req.body;
+
+    if (!name)
+      return res.status(400).json({ error: "Store name is required" });
+
+    // If owner_id provided, ensure it exists
+    if (owner_id) {
+      const checkOwner = await pool.query("SELECT id FROM users WHERE id=$1 AND role='owner'", [owner_id]);
+      if (checkOwner.rows.length === 0)
+        return res.status(400).json({ error: "Owner not found or not an owner" });
+    }
+
+    const insert = `
+      INSERT INTO stores (name, address, owner_id)
+      VALUES ($1, $2, $3)
+      RETURNING id, name, address, owner_id
+    `;
+    const { rows } = await pool.query(insert, [name, address || "", owner_id || null]);
+
+    return res.status(201).json({ store: rows[0] });
+  } catch (err) {
+    console.error("Admin createStore error:", err);
+    return res.status(500).json({ error: "Server error" });
   }
 }

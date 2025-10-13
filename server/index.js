@@ -7,7 +7,7 @@ dotenv.config();
 import { register, login, updatePassword } from './controllers/authController.js';
 import { listStores, adminAddStore } from './controllers/storesController.js';
 import { submitOrUpdateRating } from './controllers/ratingsController.js';
-import { dashboardCounts, listUsers, adminListStores } from './controllers/adminController.js';
+import { dashboardCounts, listUsers, adminListStores, createUserByAdmin } from './controllers/adminController.js';
 import { ownerStoreUsers } from './controllers/ownerController.js';
 
 import authMiddleware from './middlewares/authMiddleware.js';
@@ -33,6 +33,7 @@ app.post('/api/ratings', authMiddleware, requireRole('user'), submitOrUpdateRati
 // Admin routes
 app.get('/api/admin/dashboard', authMiddleware, requireRole('admin'), dashboardCounts);
 app.get('/api/admin/users', authMiddleware, requireRole('admin'), listUsers);
+app.post('/api/admin/users', authMiddleware, requireRole('admin'), createUserByAdmin);
 app.get('/api/admin/stores', authMiddleware, requireRole('admin'), adminListStores);
 app.post('/api/admin/stores', authMiddleware, requireRole('admin'), adminAddStore);
 
