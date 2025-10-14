@@ -1,4 +1,3 @@
-// controllers/ratingsController.js
 import pool from '../db.js';
 
 export async function submitOrUpdateRating(req, res) {

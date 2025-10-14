@@ -1,4 +1,3 @@
-// src/context/AuthContext.jsx
 import { createContext, useEffect, useState } from "react";
 
 export const AuthContext = createContext();
@@ -22,7 +21,6 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
-    // Optionally, validate token on mount or refresh user from server
   }, []);
 
   return (

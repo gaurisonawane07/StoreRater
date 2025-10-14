@@ -1,105 +1,221 @@
-// src/pages/Home.jsx
-import { useEffect, useState, useContext } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import api from "../../api";
 import { AuthContext } from "../context/AuthContext";
+import toast from "react-hot-toast";
 
 export default function Home() {
+  const { token, user } = useContext(AuthContext);
   const [stores, setStores] = useState([]);
-  const [q, setQ] = useState("");
-  const [addr, setAddr] = useState("");
-  const [sortBy, setSortBy] = useState("name"); // name or rating
-  const [sortDir, setSortDir] = useState("asc");
-  const { user, token } = useContext(AuthContext);
-  const [loading, setLoading] = useState(false);
-
-  const fetchStores = async () => {
-    setLoading(true);
-    try {
-      const params = {
-        q: q || undefined,
-        address: addr || undefined,
-        sortBy,
-        sortDir,
-        limit: 50,
-      };
-      const res = await api.get("/stores", { params });
-      setStores(res.data.stores || []);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to fetch stores");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [dashboard, setDashboard] = useState({});
+  const [newStore, setNewStore] = useState({
+    name: "",
+    address: "",
+    description: "",
+  });
 
   useEffect(() => {
-    fetchStores();
-    // eslint-disable-next-line
-  }, [sortBy, sortDir]);
+    if (!user) return; // wait until user is loaded
+    if (user.role === "admin") fetchDashboard();
+    else fetchStores();
+  }, [user]);
 
-  const handleRating = async (storeId, rating) => {
-    if (!token) return alert("Please login to rate");
+  const fetchStores = async () => {
     try {
-      await api.post("/ratings", { store_id: storeId, rating });
-      await fetchStores();
+      const res = await api.get("/stores", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      setStores(res.data.stores || []);
     } catch (err) {
-      alert(err.response?.data?.error || "Rating failed");
+      console.error("Fetch stores error:", err);
+      toast.error("Failed to load stores");
     }
   };
 
+  const fetchDashboard = async () => {
+    try {
+      const res = await api.get("/admin/dashboard", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setDashboard(res.data);
+    } catch (err) {
+      console.error("Fetch dashboard error:", err);
+      toast.error("Failed to load dashboard");
+    }
+  };
+
+  const handleRate = async (storeId, rating) => {
+    if (!token) return toast.error("Please login to rate a store");
+    try {
+      await api.post(
+        "/ratings",
+        { store_id: storeId, rating },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success("Rating submitted!");
+      fetchStores();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to submit rating");
+    }
+  };
+
+  const handleAddStore = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post("/admin/stores", newStore, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success("Store added successfully!");
+      setNewStore({ name: "", address: "", description: "" });
+      fetchStores();
+    } catch (err) {
+      console.error("Add store error:", err);
+      toast.error(err.response?.data?.error || "Failed to add store");
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex justify-center items-center text-gray-600">
+        <p>Loading user info...</p>
+      </div>
+    );
+  }
+  console.log("🔍 Current logged-in user:", user);
+  console.log("🔍 Token:", token);
+
+  if (user.role === "admin") {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8">
+        <h1 className="text-3xl font-bold text-blue-700 mb-6 text-center">
+          Admin Dashboard
+        </h1>
+        <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <DashboardCard title="Users" value={dashboard.totalUsers} color="blue" />
+          <DashboardCard title="Stores" value={dashboard.totalStores} color="green" />
+          <DashboardCard title="Ratings" value={dashboard.totalRatings} color="yellow" />
+        </div>
+      </div>
+    );
+  }
+
+  if (user.role === "owner") {
+    return (
+      <div className="min-h-screen bg-gray-50 p-8">
+        <h1 className="text-3xl font-bold text-blue-700 mb-6 text-center">
+          Owner Dashboard
+        </h1>
+
+        {/* Add store form */}
+        <div className="max-w-lg mx-auto bg-white p-6 rounded-lg shadow mb-8">
+          <h2 className="text-lg font-semibold text-gray-700 mb-4">
+            Add New Store
+          </h2>
+          <form onSubmit={handleAddStore} className="space-y-3">
+            <input
+              type="text"
+              placeholder="Store Name"
+              value={newStore.name}
+              onChange={(e) =>
+                setNewStore({ ...newStore, name: e.target.value })
+              }
+              required
+              className="border p-2 rounded w-full"
+            />
+            <input
+              type="text"
+              placeholder="Address"
+              value={newStore.address}
+              onChange={(e) =>
+                setNewStore({ ...newStore, address: e.target.value })
+              }
+              required
+              className="border p-2 rounded w-full"
+            />
+            <textarea
+              placeholder="Description"
+              value={newStore.description}
+              onChange={(e) =>
+                setNewStore({ ...newStore, description: e.target.value })
+              }
+              className="border p-2 rounded w-full"
+            />
+            <button
+              type="submit"
+              className="bg-blue-600 text-white w-full py-2 rounded hover:bg-blue-700"
+            >
+              Add Store
+            </button>
+          </form>
+        </div>
+
+        {/* Store List */}
+        <StoreList stores={stores} />
+      </div>
+    );
+  }
+
+  // Default: User view
   return (
-    <div className="p-6">
-      <div className="flex flex-col sm:flex-row gap-4 justify-between mb-6">
-        <div className="flex gap-2">
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name" className="border p-2 rounded" />
-          <input value={addr} onChange={(e) => setAddr(e.target.value)} placeholder="Search by address" className="border p-2 rounded" />
-          <button onClick={fetchStores} className="bg-blue-600 text-white px-4 rounded">Search</button>
-        </div>
+    <StoreList stores={stores} handleRate={handleRate} user={user} />
+  );
+}
 
-        <div className="flex gap-2 items-center">
-          <label className="text-sm">Sort:</label>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="border p-2 rounded">
-            <option value="name">Name</option>
-            <option value="rating">Avg Rating</option>
-          </select>
-          <button onClick={() => setSortDir((s) => (s === "asc" ? "desc" : "asc"))} className="border p-2 rounded">
-            {sortDir === "asc" ? "Asc" : "Desc"}
-          </button>
-        </div>
-      </div>
+// Reusable small components
+function DashboardCard({ title, value, color }) {
+  const colorClass = {
+    blue: "text-blue-600",
+    green: "text-green-600",
+    yellow: "text-yellow-600",
+  }[color];
+  return (
+    <div className="bg-white p-6 rounded-lg shadow text-center">
+      <h2 className="text-xl font-semibold text-gray-700">{title}</h2>
+      <p className={`text-3xl font-bold ${colorClass}`}>{value || 0}</p>
+    </div>
+  );
+}
 
-      {loading ? <div>Loading...</div> : null}
+function StoreList({ stores, handleRate, user }) {
+  return (
+    <div className="min-h-screen bg-gray-50 p-8">
+      <h1 className="text-3xl font-bold text-blue-700 mb-6 text-center">
+        Stores
+      </h1>
+      <div className="max-w-5xl mx-auto grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {stores.length === 0 ? (
+          <p className="text-gray-500">No stores available.</p>
+        ) : (
+          stores.map((store) => (
+            <div
+              key={store.id}
+              className="bg-white shadow-md rounded-lg p-4 hover:shadow-lg transition"
+            >
+              <h3 className="text-lg font-semibold text-blue-600">
+                {store.name}
+              </h3>
+              <p className="text-gray-500 mb-2">{store.address}</p>
+              <p className="text-yellow-500 mb-3 font-semibold">
+                ⭐ Average Rating: {store.avg_rating || 0}
+              </p>
 
-      <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {stores.map((s) => (
-          <div key={s.id} className="bg-white p-4 rounded shadow">
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="text-lg font-semibold">{s.name}</h3>
-                <p className="text-sm text-gray-600">{s.address}</p>
-              </div>
-              <div className="text-right">
-                <div className="text-yellow-500 font-bold">⭐ {s.avg_rating ?? 0}</div>
-                <div className="text-xs text-gray-500">Your rating: {s.my_rating ?? "-"}</div>
-              </div>
+              {user?.role === "user" && (
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((num) => (
+                    <button
+                      key={num}
+                      onClick={() => handleRate(store.id, num)}
+                      className="px-2 text-xl hover:scale-110 transition"
+                    >
+                      ⭐
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-
-            <div className="mt-3 flex gap-2">
-              {[1,2,3,4,5].map((r) => (
-                <button
-                  key={r}
-                  onClick={() => handleRating(s.id, r)}
-                  className={`px-2 py-1 rounded border ${s.my_rating === r ? "bg-yellow-400 text-white" : "hover:bg-yellow-50"}`}
-                >
-                  {r}⭐
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
-
-      {stores.length === 0 && !loading && <div className="mt-8 text-gray-500">No stores found.</div>}
     </div>
   );
 }

@@ -1,4 +1,3 @@
-// controllers/ownerController.js
 import pool from '../db.js';
 
 export async function ownerStoreUsers(req, res) {

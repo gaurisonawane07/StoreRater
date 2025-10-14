@@ -1,4 +1,3 @@
-// validators/validators.js
 export function validateName(name) {
   if (!name) return { valid: false, msg: 'Name required' };
   if (name.length < 20) return { valid: false, msg: 'Name must be at least 20 characters' };

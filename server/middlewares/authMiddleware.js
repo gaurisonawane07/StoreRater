@@ -1,4 +1,3 @@
-// middlewares/authMiddleware.js
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -11,7 +10,7 @@ export default function authMiddleware(req, res, next) {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = payload; // payload should contain at least id and role
+    req.user = payload; 
     return next();
   } catch (err) {
     return res.status(401).json({ error: 'Invalid token' });

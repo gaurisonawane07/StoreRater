@@ -1,4 +1,3 @@
-// server.js
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -21,8 +20,8 @@ app.use(express.json());
 app.post('/api/auth/register', register);
 app.post('/api/auth/login', login);
 
-// stores listing (public but returns user's rating if logged in)
-app.get('/api/stores', authMiddlewareOptional, listStores); // we'll implement authMiddlewareOptional below
+// stores listing 
+app.get('/api/stores', authMiddlewareOptional, listStores); 
 
 // PRIVATE: update password
 app.put('/api/auth/password', authMiddleware, updatePassword);
@@ -39,16 +38,13 @@ app.post('/api/admin/stores', authMiddleware, requireRole('admin'), adminAddStor
 
 // Owner routes
 app.get('/api/owner/stores/ratings', authMiddleware, requireRole('owner'), ownerStoreUsers);
+app.post('/api/stores', authMiddleware, requireRole('owner'), adminAddStore);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-/**
- * Helper: optional auth middleware (if token present, set req.user)
- * We'll define it here quickly to keep file minimal.
- */
 import jwt from 'jsonwebtoken';
 function authMiddlewareOptional(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -59,7 +55,7 @@ function authMiddlewareOptional(req, res, next) {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     req.user = payload;
   } catch (err) {
-    // ignore invalid token for optional
+    
   }
   return next();
 }

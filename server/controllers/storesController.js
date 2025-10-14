@@ -1,10 +1,6 @@
-// controllers/storesController.js
 import pool from '../db.js';
 
-/**
- * List stores with optional search by name/address, support sorting and pagination.
- * Also include overall average rating and user's submitted rating (if userId provided)
- */
+
 export async function listStores(req, res) {
   try {
     const { q, address, sortBy='name', sortDir='asc', page=1, limit=10 } = req.query;

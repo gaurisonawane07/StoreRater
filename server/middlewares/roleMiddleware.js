@@ -1,4 +1,3 @@
-// middlewares/roleMiddleware.js
 export function requireRole(...allowedRoles) {
   return (req, res, next) => {
     const role = req.user?.role;
