@@ -53,12 +53,9 @@ Built with **React, Node.js, Express, PostgreSQL, and Tailwind CSS** — this pr
 3. **Set up environment variables**
 - Create a .env file inside the server/ folder:
    ```env
-   PORT=5000
-   DB_USER=postgres
-   DB_PASSWORD=your_password
-   DB_NAME=store_rater
-   DB_HOST=localhost
-   JWT_SECRET=your_secret_key
+   DATABASE_URL=Your_DB_URL
+   JWT_SECRET=yoursecretkey
+   PORT=your_port_number
 
 
 ## API Endpoints Summary

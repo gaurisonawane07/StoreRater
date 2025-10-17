@@ -1,0 +1,43 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: store-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Gauri@07
+      POSTGRES_DB: store_rater
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build: ./server
+    container_name: store-backend
+    restart: always
+    environment:
+      DB_USER: postgres
+      DB_PASSWORD: Gauri@07
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: store_rater
+      JWT_SECRET: thisisareallystrongsecretkey
+    ports:
+      - "5000:5000"
+    depends_on:
+      - postgres
+
+  frontend:
+    build: ./client
+    container_name: store-frontend
+    restart: always
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
